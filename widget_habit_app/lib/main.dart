@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:widget_habit_app/widgets/habit_card.dart';
+import 'package:widget_habit_app/widgets/weekly_date_picker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,37 +29,51 @@ class GoalsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[900], // Dark background color
       appBar: AppBar(
-        title: const Text('Goals'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.grey[900],
+        leading: Builder(
+          builder: (BuildContext context) {
+            return IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () {
+                Scaffold.of(context).openDrawer();
+              },
+            );
+          },
+        ),
+        title: Text(
+          'Goals',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: false, // Align title to the left
+        actions: [
+          Text(
+            'THU',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: Colors.white70),
+          ),
+          Text(
+            ' 19 Jun',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(width: 16), // Add some spacing to the right
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  'Goals',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Spacer(),
-                Text('THU', style: Theme.of(context).textTheme.titleLarge),
-                Text(
-                  ' 19 Jun',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+            const WeeklyDatePicker(),
             const SizedBox(height: 20),
-            // Placeholder for the list of habit cards
             Expanded(
               child: ListView(
                 children: const [
@@ -99,6 +114,51 @@ class GoalsScreen extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+      drawer: Drawer(
+        backgroundColor: Colors.grey[850], // Darker background for the drawer
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color:
+                    Colors.grey[800], // Slightly lighter than drawer background
+              ),
+              child: const Text(
+                'Menu',
+                style: TextStyle(color: Colors.white, fontSize: 24),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home, color: Colors.white70),
+              title: const Text('Home', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                // Handle navigation to Home
+                Navigator.pop(context); // Close the drawer
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings, color: Colors.white70),
+              title: const Text(
+                'Settings',
+                style: TextStyle(color: Colors.white),
+              ),
+              onTap: () {
+                // Handle navigation to Settings
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.info, color: Colors.white70),
+              title: const Text('About', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                // Handle navigation to About
+                Navigator.pop(context);
+              },
             ),
           ],
         ),
