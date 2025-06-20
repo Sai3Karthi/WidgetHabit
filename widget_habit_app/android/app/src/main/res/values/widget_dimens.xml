@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget Dimensions -->
+    <dimen name="widget_min_width">180dp</dimen>
+    <dimen name="widget_min_height">110dp</dimen>
+    <dimen name="widget_medium_width">320dp</dimen>
+    <dimen name="widget_medium_height">110dp</dimen>
+    <dimen name="widget_large_width">320dp</dimen>
+    <dimen name="widget_large_height">220dp</dimen>
+
+    <!-- Spacing -->
+    <dimen name="widget_space_xs">4dp</dimen>
+    <dimen name="widget_space_s">8dp</dimen>
+    <dimen name="widget_space_m">16dp</dimen>
+    <dimen name="widget_space_l">24dp</dimen>
+    <dimen name="widget_space_xl">32dp</dimen>
+
+    <!-- Padding and Margins -->
+    <dimen name="widget_padding_outer">12dp</dimen>
+    <dimen name="widget_padding_inner">8dp</dimen>
+    <dimen name="widget_margin_card">4dp</dimen>
+    <dimen name="widget_margin_element">6dp</dimen>
+
+    <!-- Border Radius -->
+    <dimen name="widget_radius_s">8dp</dimen>
+    <dimen name="widget_radius_m">12dp</dimen>
+    <dimen name="widget_radius_l">16dp</dimen>
+
+    <!-- Text Sizes -->
+    <dimen name="widget_text_header">16sp</dimen>
+    <dimen name="widget_text_title">14sp</dimen>
+    <dimen name="widget_text_body">12sp</dimen>
+    <dimen name="widget_text_small">10sp</dimen>
+
+    <!-- Icon and Element Sizes -->
+    <dimen name="widget_icon_small">16dp</dimen>
+    <dimen name="widget_icon_medium">20dp</dimen>
+    <dimen name="widget_icon_large">24dp</dimen>
+    <dimen name="widget_completion_dot_size">24dp</dimen>
+    <dimen name="widget_completion_dot_small">20dp</dimen>
+    <dimen name="widget_habit_color_bar_width">3dp</dimen>
+    <dimen name="widget_habit_color_bar_height">32dp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="widget_elevation_card">2dp</dimen>
+    <dimen name="widget_elevation_button">4dp</dimen>
+</resources> 

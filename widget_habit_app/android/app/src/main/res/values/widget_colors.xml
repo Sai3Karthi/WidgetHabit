@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="widget_primary_background">#FF0A0A0A</color>
+    <color name="widget_secondary_background">#FF1A1A1A</color>
+    <color name="widget_card_background">#FF2A2A2A</color>
+    <color name="widget_surface_color">#FF1E1E1E</color>
+
+    <!-- Text Colors -->
+    <color name="widget_primary_text">#FFFFFFFF</color>
+    <color name="widget_secondary_text">#FFB3B3B3</color>
+    <color name="widget_tertiary_text">#FF666666</color>
+
+    <!-- Accent Colors -->
+    <color name="widget_accent_blue">#FF4A90E2</color>
+    <color name="widget_accent_green">#FF4CAF50</color>
+    <color name="widget_accent_red">#FFE74C3C</color>
+    <color name="widget_accent_orange">#FFFF9800</color>
+    <color name="widget_accent_purple">#FF9C27B0</color>
+    <color name="widget_accent_yellow">#FFFFC107</color>
+    <color name="widget_accent_teal">#FF009688</color>
+    <color name="widget_accent_pink">#FFE91E63</color>
+
+    <!-- Status Colors -->
+    <color name="widget_completed_green">#FF4CAF50</color>
+    <color name="widget_incomplete_grey">#FF424242</color>
+    <color name="widget_current_day_highlight">#FF4A90E2</color>
+    <color name="widget_favorite_amber">#FFFFC107</color>
+
+    <!-- Transparency Variants -->
+    <color name="widget_incomplete_grey_30">#4D424242</color>
+    <color name="widget_incomplete_grey_50">#80424242</color>
+    <color name="widget_black_10">#1A000000</color>
+    <color name="widget_black_20">#33000000</color>
+</resources> 

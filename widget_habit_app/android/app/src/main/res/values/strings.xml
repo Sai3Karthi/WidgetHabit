@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Widget Habit App</string>
+    <string name="app_name">Goals</string>
+    <string name="habit_widget_description">Track your daily habits with weekly progress</string>
+    <string name="widget_title">Goals</string>
+    <string name="widget_no_habits">No habits yet</string>
+    <string name="widget_add_habits">Add habits in the app</string>
+    <string name="widget_loading">Loading habits...</string>
+    <string name="widget_error">Failed to load habits</string>
+    <string name="widget_today">Today</string>
+    <string name="widget_yesterday">Yesterday</string>
+    <string name="widget_this_week">This week</string>
 </resources> 

@@ -5,10 +5,10 @@ enum CompletionStatus { none, completed, skipped }
 class Habit {
   String title;
   TimeOfDay time;
-  Map<DateTime, CompletionStatus>
-  completionDates; // Changed to CompletionStatus
-  Color color; // New property for habit color
-  int targetCount; // New property for total target count
+  Map<DateTime, CompletionStatus> completionDates;
+  Color color;
+  int targetCount;
+  bool isFavorite;
 
   Habit({
     required this.title,
@@ -16,6 +16,7 @@ class Habit {
     Map<DateTime, CompletionStatus>? completionDates,
     this.color = Colors.blue,
     this.targetCount = 1,
+    this.isFavorite = false,
   }) : completionDates = completionDates ?? {};
 
   // Method to mark a day with a specific status
@@ -30,17 +31,49 @@ class Habit {
     return completionDates[normalizedDate] ?? CompletionStatus.none;
   }
 
-  // Convert Habit object to JSON for storage (e.g., in shared_preferences)
+  // Get completion status for a week starting from a given date
+  List<CompletionStatus> getWeekCompletionStatus(DateTime weekStartDate) {
+    List<CompletionStatus> weekStatus = [];
+    for (int i = 0; i < 7; i++) {
+      DateTime date = weekStartDate.add(Duration(days: i));
+      weekStatus.add(getCompletionStatus(date));
+    }
+    return weekStatus;
+  }
+
+  // Get completed count for current week
+  int getWeekCompletedCount(DateTime weekStartDate) {
+    int completed = 0;
+    for (int i = 0; i < 7; i++) {
+      DateTime date = weekStartDate.add(Duration(days: i));
+      if (getCompletionStatus(date) == CompletionStatus.completed) {
+        completed++;
+      }
+    }
+    return completed;
+  }
+
+  // Get total possible completions for the week (7 * targetCount)
+  int getWeekTotalCount() {
+    return 7 * targetCount;
+  }
+
+  // Toggle favorite status
+  void toggleFavorite() {
+    isFavorite = !isFavorite;
+  }
+
+  // Convert Habit object to JSON for storage
   Map<String, dynamic> toJson() => {
     'title': title,
     'timeHour': time.hour,
     'timeMinute': time.minute,
     'completionDates': completionDates.map(
-      (date, status) =>
-          MapEntry(date.toIso8601String(), status.index), // Store enum index
+      (date, status) => MapEntry(date.toIso8601String(), status.index),
     ),
-    'colorValue': color.toARGB32(), // Store color as int value
-    'targetCount': targetCount, // Store target count
+    'colorValue': color.value,
+    'targetCount': targetCount,
+    'isFavorite': isFavorite,
   };
 
   // Create Habit object from JSON
@@ -55,12 +88,10 @@ class Habit {
           dateString,
           statusIndex,
         ) {
-          // Handle both int and bool values for backward compatibility
           int index = 0;
           if (statusIndex is int) {
             index = statusIndex;
           } else if (statusIndex is bool) {
-            // Convert old boolean format to CompletionStatus
             index = statusIndex
                 ? CompletionStatus.completed.index
                 : CompletionStatus.none.index;
@@ -72,8 +103,8 @@ class Habit {
           );
         }) ??
         {},
-    color: Color(json['colorValue'] as int), // Retrieve color from int value
-    targetCount:
-        json['targetCount'] as int? ?? 1, // Retrieve target count with default
+    color: Color(json['colorValue'] as int),
+    targetCount: json['targetCount'] as int? ?? 1,
+    isFavorite: json['isFavorite'] as bool? ?? false,
   );
 }

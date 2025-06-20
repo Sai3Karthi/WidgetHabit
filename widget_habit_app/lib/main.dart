@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:widget_habit_app/widgets/habit_card.dart';
-import 'package:widget_habit_app/widgets/weekly_date_picker.dart';
-import 'package:widget_habit_app/models/habit.dart'; // Import Habit model
-import 'package:widget_habit_app/services/habit_service.dart'; // Import HabitService
-import 'package:widget_habit_app/screens/add_habit_screen.dart'; // Import AddHabitScreen
+import 'package:widget_habit_app/models/habit.dart';
+import 'package:widget_habit_app/services/habit_service.dart';
+import 'package:widget_habit_app/services/widget_service.dart';
+import 'package:widget_habit_app/widgets/weekly_habit_card.dart';
+import 'package:widget_habit_app/utils/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize widget service
+  WidgetService.initialize();
+
   runApp(const MyApp());
 }
 
@@ -15,37 +22,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Widget Habit',
-      theme: ThemeData(
-        // We will customize this later for themes, transparency, and individual colors.
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.grey[900]!,
-          primary: Colors.grey[800],
-          secondary: Colors.grey[700],
-          surface: Colors.grey[900],
-          onSurface: Colors.white,
-          onPrimary: Colors.white,
-          onSecondary: Colors.white,
-        ),
-        cardColor: Colors.grey[850], // Darker grey for cards
-        scaffoldBackgroundColor: Colors.grey[900], // Dark background color
-        useMaterial3: true,
-        textTheme: const TextTheme(
-          displaySmall: TextStyle(
-            color: Colors.white,
-          ), // Ensure text remains visible
-          headlineSmall: TextStyle(color: Colors.white),
-          titleLarge: TextStyle(color: Colors.white),
-          titleMedium: TextStyle(color: Colors.white70),
-          bodyMedium: TextStyle(color: Colors.white70),
-          bodySmall: TextStyle(color: Colors.black), // For calendar day number
-        ),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey[900],
-          foregroundColor: Colors.white, // For icon buttons and title
-        ),
-      ),
-      home: const GoalsScreen(), // Our main screen will be GoalsScreen
+      title: 'Goals',
+      theme: AppTheme.darkTheme,
+      home: const GoalsScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -57,268 +37,637 @@ class GoalsScreen extends StatefulWidget {
   State<GoalsScreen> createState() => _GoalsScreenState();
 }
 
-class _GoalsScreenState extends State<GoalsScreen> {
-  late DateTime _currentWeekStart;
-  late DateTime _selectedDay;
-  final HabitService _habitService = HabitService(); // Initialize HabitService
-  List<Habit> _habits = []; // List to hold loaded habits
+class _GoalsScreenState extends State<GoalsScreen> with WidgetsBindingObserver {
+  final HabitService _habitService = HabitService();
+  List<Habit> _habits = [];
+  DateTime _currentWeekStart = DateTime.now();
+  bool _isLoading = false;
+  DateTime _selectedDate = DateTime.now();
+  int _currentWeekOffset = 0;
 
   @override
   void initState() {
     super.initState();
-    _selectedDay = DateTime.now();
-    _currentWeekStart = _findStartOfWeek(_selectedDay);
-    _loadHabits(); // Load habits when the screen initializes
+    WidgetsBinding.instance.addObserver(this);
+    _currentWeekStart = _getWeekStart(DateTime.now());
+    _loadHabits();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadHabits();
+    }
+  }
+
+  DateTime _getWeekStart(DateTime date) {
+    // Get Monday of the current week
+    int weekday = date.weekday;
+    return date.subtract(Duration(days: weekday - 1));
+  }
+
+  String get _weekDisplayText {
+    final now = DateTime.now();
+    final thisWeekStart = _getWeekStart(now);
+
+    if (_currentWeekStart.isAtSameMomentAs(thisWeekStart)) {
+      return 'Week view';
+    } else if (_currentWeekStart.isBefore(thisWeekStart)) {
+      final weeksDiff = thisWeekStart.difference(_currentWeekStart).inDays ~/ 7;
+      return '$weeksDiff week${weeksDiff > 1 ? 's' : ''} ago';
+    } else {
+      final weeksDiff = _currentWeekStart.difference(thisWeekStart).inDays ~/ 7;
+      return 'In $weeksDiff week${weeksDiff > 1 ? 's' : ''}';
+    }
+  }
+
+  String get _currentDateText {
+    final today = DateTime.now();
+    final isCurrentWeek =
+        _currentWeekStart.isBefore(today.add(const Duration(days: 1))) &&
+        _currentWeekStart.add(const Duration(days: 7)).isAfter(today);
+
+    if (isCurrentWeek) {
+      return '${today.day}';
+    } else {
+      final endDate = _currentWeekStart.add(const Duration(days: 6));
+      return '${_currentWeekStart.day}-${endDate.day}';
+    }
+  }
+
+  String get _monthYearText {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return '${months[_currentWeekStart.month - 1]} ${_currentWeekStart.year}';
   }
 
   Future<void> _loadHabits() async {
-    _habits = await _habitService.loadHabits();
-    if (_habits.isEmpty) {
-      // Add some dummy habits if none exist
-      _habits.add(
-        Habit(
-          title: 'Banana -3',
-          time: TimeOfDay.now(),
-          color: Colors.red,
-          targetCount: 43,
-        ),
-      );
-      _habits.add(
-        Habit(
-          title: 'Hostel booking for eggs and',
-          time: TimeOfDay.now(),
-          color: Colors.blueAccent,
-          targetCount: 5,
-        ),
-      );
-      _habits.add(
-        Habit(
-          title: 'Egg -> 1 full egg + 2 whites',
-          time: TimeOfDay.now(),
-          color: Colors.orange,
-          targetCount: 43,
-        ),
-      );
-      _habits.add(
-        Habit(
-          title: 'Protien powder',
-          time: TimeOfDay.now(),
-          color: Colors.green,
-          targetCount: 43,
-        ),
-      );
-      _habits.add(
-        Habit(
-          title: 'Dry fruits -> cashews pistas',
-          time: TimeOfDay.now(),
-          color: Colors.purple,
-          targetCount: 43,
-        ),
-      );
-      _habits.add(
-        Habit(
-          title: 'Gym',
-          time: TimeOfDay.fromDateTime(
-            DateTime.now().add(const Duration(hours: 1)),
-          ),
-          color: Colors.grey,
-          targetCount: 43,
-        ),
-      ); // Added Gym habit
-      await _habitService.saveHabits(_habits);
-    }
-    setState(() {}); // Rebuild the UI with loaded habits
-  }
-
-  DateTime _findStartOfWeek(DateTime date) {
-    int daysToSubtract =
-        date.weekday - 1; // Assuming Monday is the first day of the week
-    return DateTime(date.year, date.month, date.day - daysToSubtract);
-  }
-
-  void _onWeekChanged(DateTime newWeekStart) {
-    setState(() {
-      _currentWeekStart = newWeekStart;
-      // Optionally, adjust selectedDay if it falls outside the new week
-      if (!_isDayInWeek(_selectedDay, _currentWeekStart)) {
-        _selectedDay =
-            _currentWeekStart; // Default to the first day of the new week
+    final prefs = await SharedPreferences.getInstance();
+    final String? habitsJson = prefs.getString('habits');
+    if (habitsJson != null) {
+      final List<dynamic> habitList = json.decode(habitsJson);
+      if (mounted) {
+        setState(() {
+          _habits = habitList.map((json) => Habit.fromJson(json)).toList();
+        });
       }
-    });
+    }
+    // No need to update widget on load, it happens on resume or changes
   }
 
-  void _onDaySelected(DateTime day) {
+  Future<void> _saveHabits() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<Map<String, dynamic>> habitList = _habits
+        .map((h) => h.toJson())
+        .toList();
+    await prefs.setString('habits', json.encode(habitList));
+  }
+
+  void _addHabit(
+    String title,
+    TimeOfDay time,
+    Color color,
+    bool isFavorite,
+  ) async {
+    final newHabit = Habit(
+      title: title,
+      time: time,
+      color: color,
+      isFavorite: isFavorite,
+    );
     setState(() {
-      _selectedDay = day;
+      _habits.add(newHabit);
     });
+    await _saveHabits();
+    await WidgetService.updateWidget();
+    if (mounted) Navigator.of(context).pop();
   }
 
-  bool _isDayInWeek(DateTime day, DateTime weekStart) {
-    return day.isAfter(weekStart.subtract(const Duration(days: 1))) &&
-        day.isBefore(weekStart.add(const Duration(days: 7)));
+  void _onHabitCompletionChanged(Habit habit, DateTime date) async {
+    setState(() {
+      // Cycle through states: 0 (none) -> 1 (completed) -> 2 (skipped) -> 0
+      final currentStatus = habit.getCompletionStatus(date);
+      final nextStatusValue =
+          (CompletionStatus.values.indexOf(currentStatus) + 1) % 3;
+      final nextStatus = CompletionStatus.values[nextStatusValue];
+      habit.setCompletionStatus(date, nextStatus);
+    });
+    await _saveHabits();
+    await WidgetService.updateWidget();
+  }
+
+  void _onHabitFavorited(Habit habit) async {
+    setState(() {
+      habit.isFavorite = !habit.isFavorite;
+    });
+    await _saveHabits();
+    await WidgetService.updateWidget();
+  }
+
+  void _deleteHabit(Habit habit) async {
+    setState(() {
+      _habits.remove(habit);
+    });
+    await _saveHabits();
+    await WidgetService.updateWidget();
+  }
+
+  void _showAddHabitSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: AddHabitSheet(onAdd: _addHabit),
+        );
+      },
+    );
+  }
+
+  void _navigateWeek(bool isNext) {
+    setState(() {
+      _currentWeekStart = _currentWeekStart.add(
+        Duration(days: isNext ? 7 : -7),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900], // Dark background color
+      backgroundColor: AppTheme.primaryBackground,
       appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        leading: Builder(
-          builder: (BuildContext context) {
-            return IconButton(
-              icon: const Icon(Icons.menu, color: Colors.white),
-              onPressed: () {
-                Scaffold.of(context).openDrawer();
-              },
-            );
-          },
+        backgroundColor: AppTheme.primaryBackground,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: AppTheme.primaryText),
+          onPressed: () {},
         ),
-        title: Text(
-          'Week view',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_weekDisplayText, style: AppTheme.titleLarge),
+            Text(_monthYearText, style: AppTheme.bodySmall),
+          ],
         ),
         centerTitle: false,
         actions: [
+          Container(
+            margin: const EdgeInsets.only(right: AppTheme.spaceM),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spaceM,
+              vertical: AppTheme.spaceS,
+            ),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(AppTheme.radiusM),
+              border: Border.all(color: AppTheme.currentDayHighlight, width: 1),
+            ),
+            child: Text(
+              _currentDateText,
+              style: AppTheme.titleMedium.copyWith(
+                color: AppTheme.currentDayHighlight,
+              ),
+            ),
+          ),
           IconButton(
-            icon: Stack(
-              alignment: Alignment.center,
+            icon: const Icon(Icons.more_vert, color: AppTheme.primaryText),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          // Week navigation
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spaceM,
+              vertical: AppTheme.spaceS,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(
-                  Icons.calendar_today,
-                  color: Colors.white70,
-                  size: 28,
+                IconButton(
+                  onPressed: () => _navigateWeek(false),
+                  icon: const Icon(
+                    Icons.chevron_left,
+                    color: AppTheme.primaryText,
+                    size: 28,
+                  ),
                 ),
-                Positioned(
-                  top: 8,
-                  child: Text(
-                    '${_selectedDay.day}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                    ),
+                IconButton(
+                  onPressed: () => _navigateWeek(true),
+                  icon: const Icon(
+                    Icons.chevron_right,
+                    color: AppTheme.primaryText,
+                    size: 28,
                   ),
                 ),
               ],
             ),
-            onPressed: () {
-              // Handle calendar icon tap - perhaps open a full calendar view
-            },
           ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
+          // Habits list
+          Expanded(
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: AppTheme.accentBlue,
+                    ),
+                  )
+                : _habits.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.track_changes_outlined,
+                          size: 64,
+                          color: AppTheme.tertiaryText,
+                        ),
+                        const SizedBox(height: AppTheme.spaceM),
+                        Text(
+                          'No habits yet',
+                          style: AppTheme.titleLarge.copyWith(
+                            color: AppTheme.tertiaryText,
+                          ),
+                        ),
+                        const SizedBox(height: AppTheme.spaceS),
+                        Text(
+                          'Add your first habit to get started',
+                          style: AppTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(
+                      bottom: AppTheme.spaceXXL * 2,
+                    ),
+                    itemCount: _habits.length,
+                    itemBuilder: (context, index) {
+                      if (index >= _habits.length) {
+                        return const SizedBox.shrink();
+                      }
+
+                      final habit = _habits[index];
+                      return WeeklyHabitCard(
+                        habit: habit,
+                        weekStartDate: _currentWeekStart,
+                        onCompletionChanged: (date) =>
+                            _onHabitCompletionChanged(habit, date),
+                        onFavoriteTapped: () => _onHabitFavorited(habit),
+                        onDelete: () => _deleteHabit(habit),
+                      );
+                    },
+                  ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              WeeklyDatePicker(
-                currentWeekStart: _currentWeekStart,
-                selectedDay: _selectedDay,
-                onWeekChanged: _onWeekChanged,
-                onDaySelected: _onDaySelected,
-                habits: _habits, // Pass the list of habits
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddHabitSheet,
+        backgroundColor: AppTheme.accentBlue,
+        child: const Icon(Icons.add, color: AppTheme.primaryText, size: 28),
+      ),
+    );
+  }
+}
+
+class AddHabitSheet extends StatefulWidget {
+  final Function(String, TimeOfDay, Color, bool) onAdd;
+
+  const AddHabitSheet({Key? key, required this.onAdd}) : super(key: key);
+
+  @override
+  _AddHabitSheetState createState() => _AddHabitSheetState();
+}
+
+class _AddHabitSheetState extends State<AddHabitSheet> {
+  final _formKey = GlobalKey<FormState>();
+  String _title = '';
+  TimeOfDay _selectedTime = TimeOfDay.now();
+  Color _selectedColor = AppTheme.accentBlue;
+  int _targetCount = 1;
+  bool _isFavorite = false;
+  bool _isSubmitting = false;
+
+  Future<void> _selectTime() async {
+    if (!mounted) return;
+
+    try {
+      final TimeOfDay? picked = await showTimePicker(
+        context: context,
+        initialTime: _selectedTime,
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              timePickerTheme: TimePickerThemeData(
+                backgroundColor: AppTheme.surfaceColor,
+                hourMinuteTextColor: AppTheme.primaryText,
+                dayPeriodTextColor: AppTheme.primaryText,
               ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _habits.length,
-                  itemBuilder: (context, index) {
-                    final habit = _habits[index];
-                    return HabitCard(
-                      habit: habit, // Pass the Habit object directly
-                      cardColor: Colors.blue, // Example color
-                      opacity: 0.7,
-                      currentWeekStart: _currentWeekStart,
-                      selectedDay: _selectedDay,
-                      onDayToggled: (data) async {
-                        final String habitTitle = data['habitTitle'];
-                        final DateTime date = data['date'];
-                        final CompletionStatus status = data['status'];
-                        await _habitService.updateHabitCompletion(
-                          habitTitle,
-                          date,
-                          status,
-                        );
-                        _loadHabits(); // Reload habits to update UI
-                      },
-                    );
-                  },
+            ),
+            child: child!,
+          );
+        },
+      );
+
+      if (picked != null && picked != _selectedTime && mounted) {
+        setState(() {
+          _selectedTime = picked;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error selecting time: $e');
+    }
+  }
+
+  void _submitForm() async {
+    if (_isSubmitting || !mounted) return;
+
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isSubmitting = true;
+      });
+
+      try {
+        _formKey.currentState!.save();
+        final newHabit = Habit(
+          title: _title,
+          time: _selectedTime,
+          color: _selectedColor,
+          targetCount: _targetCount,
+          isFavorite: _isFavorite,
+        );
+
+        if (mounted) {
+          widget.onAdd(_title, _selectedTime, _selectedColor, _isFavorite);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isSubmitting = false;
+          });
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppTheme.radiusXL),
+        ),
+      ),
+      child: Column(
+        children: [
+          // Handle bar
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(top: AppTheme.spaceM),
+            decoration: BoxDecoration(
+              color: AppTheme.tertiaryText,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Content
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppTheme.spaceL),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Add New Habit', style: AppTheme.headlineMedium),
+                    const SizedBox(height: AppTheme.spaceXL),
+
+                    // Title field
+                    TextFormField(
+                      decoration: const InputDecoration(
+                        labelText: 'Habit Title',
+                        hintText: 'e.g., Morning Workout',
+                      ),
+                      style: AppTheme.bodyLarge,
+                      validator: (value) => value?.isEmpty == true
+                          ? 'Please enter a title'
+                          : null,
+                      onSaved: (value) => _title = value ?? '',
+                      enabled: !_isSubmitting,
+                    ),
+                    const SizedBox(height: AppTheme.spaceL),
+
+                    // Time selection
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardBackground,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                      ),
+                      child: ListTile(
+                        title: Text('Time', style: AppTheme.bodyLarge),
+                        subtitle: Text(
+                          _selectedTime.format(context),
+                          style: AppTheme.bodyMedium.copyWith(
+                            color: AppTheme.accentBlue,
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.access_time,
+                          color: AppTheme.accentBlue,
+                        ),
+                        onTap: _isSubmitting ? null : _selectTime,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spaceL),
+
+                    // Target count
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardBackground,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                      ),
+                      child: ListTile(
+                        title: Text('Daily Target', style: AppTheme.bodyLarge),
+                        subtitle: Text(
+                          '$_targetCount time${_targetCount > 1 ? 's' : ''} per day',
+                          style: AppTheme.bodyMedium,
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle_outline),
+                              color: AppTheme.accentBlue,
+                              onPressed: _isSubmitting || _targetCount <= 1
+                                  ? null
+                                  : () {
+                                      if (mounted) {
+                                        setState(() {
+                                          _targetCount--;
+                                        });
+                                      }
+                                    },
+                            ),
+                            Text(
+                              '$_targetCount',
+                              style: AppTheme.titleMedium.copyWith(
+                                color: AppTheme.accentBlue,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.add_circle_outline),
+                              color: AppTheme.accentBlue,
+                              onPressed: _isSubmitting
+                                  ? null
+                                  : () {
+                                      if (mounted) {
+                                        setState(() {
+                                          _targetCount++;
+                                        });
+                                      }
+                                    },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spaceL),
+
+                    // Color picker
+                    Text('Choose Color', style: AppTheme.bodyLarge),
+                    const SizedBox(height: AppTheme.spaceM),
+                    if (!_isSubmitting)
+                      Wrap(
+                        spacing: AppTheme.spaceM,
+                        runSpacing: AppTheme.spaceM,
+                        children: AppTheme.habitColors.map((color) {
+                          final isSelected = _selectedColor == color;
+                          return GestureDetector(
+                            onTap: () {
+                              if (mounted) {
+                                setState(() {
+                                  _selectedColor = color;
+                                });
+                              }
+                            },
+                            child: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: isSelected
+                                    ? Border.all(
+                                        color: AppTheme.primaryText,
+                                        width: 3,
+                                      )
+                                    : null,
+                              ),
+                              child: isSelected
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.white,
+                                      size: 24,
+                                    )
+                                  : null,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    const SizedBox(height: AppTheme.spaceL),
+
+                    // Favorite toggle
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.cardBackground,
+                        borderRadius: BorderRadius.circular(AppTheme.radiusM),
+                      ),
+                      child: SwitchListTile(
+                        title: Text(
+                          'Mark as Favorite',
+                          style: AppTheme.bodyLarge,
+                        ),
+                        subtitle: Text(
+                          'Show star indicator for this habit',
+                          style: AppTheme.bodyMedium,
+                        ),
+                        value: _isFavorite,
+                        activeColor: Colors.amber,
+                        onChanged: _isSubmitting
+                            ? null
+                            : (value) {
+                                if (mounted) {
+                                  setState(() {
+                                    _isFavorite = value;
+                                  });
+                                }
+                              },
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spaceXL),
+
+                    // Submit button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isSubmitting ? null : _submitForm,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.accentBlue,
+                          foregroundColor: AppTheme.primaryText,
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppTheme.radiusM,
+                            ),
+                          ),
+                        ),
+                        child: _isSubmitting
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppTheme.primaryText,
+                                  ),
+                                ),
+                              )
+                            : Text('Add Habit', style: AppTheme.titleMedium),
+                      ),
+                    ),
+                    SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddHabitScreen()),
-          );
-          if (result == true) {
-            _loadHabits(); // Reload habits if a new one was added
-          }
-        },
-        backgroundColor: Colors.redAccent,
-        child: const Icon(Icons.add, color: Colors.white, size: 36),
-      ),
-      drawer: Drawer(
-        backgroundColor: Colors.grey[850], // Darker background for the drawer
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color:
-                    Colors.grey[800], // Slightly lighter than drawer background
-              ),
-              child: const Text(
-                'Menu',
-                style: TextStyle(color: Colors.white, fontSize: 24),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.home, color: Colors.white70),
-              title: const Text('Home', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                // Handle navigation to Home
-                Navigator.pop(context); // Close the drawer
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings, color: Colors.white70),
-              title: const Text(
-                'Settings',
-                style: TextStyle(color: Colors.white),
-              ),
-              onTap: () {
-                // Handle navigation to Settings
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.info, color: Colors.white70),
-              title: const Text('About', style: TextStyle(color: Colors.white)),
-              onTap: () {
-                // Handle navigation to About
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }

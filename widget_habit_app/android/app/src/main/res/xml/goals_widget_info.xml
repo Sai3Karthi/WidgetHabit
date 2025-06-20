@@ -6,4 +6,6 @@
     android:updatePeriodMillis="1800000"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
-    android:previewImage="@drawable/widget_preview" /> 
+    android:previewImage="@drawable/widget_preview"
+    android:widgetFeatures="reconfigurable|configuration_optional"
+    android:configure="com.example.widget_habit_app.MainActivity" /> 

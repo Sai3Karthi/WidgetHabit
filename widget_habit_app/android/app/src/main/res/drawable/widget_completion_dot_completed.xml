@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Background circle -->
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="@color/widget_completed_green" />
+        </shape>
+    </item>
+    
+    <!-- Check mark -->
+    <item
+        android:gravity="center"
+        android:width="@dimen/widget_icon_small"
+        android:height="@dimen/widget_icon_small">
+        <vector
+            android:width="16dp"
+            android:height="16dp"
+            android:viewportWidth="24"
+            android:viewportHeight="24">
+            <path
+                android:fillColor="@color/widget_primary_text"
+                android:pathData="M9,16.17L4.83,12l-1.42,1.41L9,19 21,7l-1.41,-1.41z" />
+        </vector>
+    </item>
+        
+</layer-list> 

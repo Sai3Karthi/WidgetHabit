@@ -2,7 +2,7 @@ package com.example.widget_habit_app
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
+import android.graphics.Color
 import android.widget.RemoteViews
 import android.widget.RemoteViewsService
 import org.json.JSONArray
@@ -13,114 +13,97 @@ import java.util.*
 
 class GoalsWidgetService : RemoteViewsService() {
     override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
-        return GoalsRemoteViewsFactory(this.applicationContext, intent)
+        return GoalsRemoteViewsFactory(this.applicationContext)
     }
 }
 
 class GoalsRemoteViewsFactory(
     private val context: Context,
-    intent: Intent
 ) : RemoteViewsService.RemoteViewsFactory {
 
-    private val appWidgetId: Int = intent.getIntExtra(
-        android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID,
-        android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID
-    )
-    
-    private val habits = mutableListOf<HabitItem>()
+    private val habits = mutableListOf<HabitData>()
 
-    override fun onCreate() {
-        // In onCreate() you setup any connections / cursors to your data source.
-        // Heavy lifting, for example downloading or creating content, should be deferred
-        // to onDataSetChanged() or getViewAt().
-    }
-
-    override fun onDestroy() {
-        habits.clear()
-    }
-
-    override fun getCount(): Int = habits.size
-
-    override fun getViewAt(position: Int): RemoteViews {
-        if (position == android.widget.AdapterView.INVALID_POSITION || habits.isEmpty()) {
-            return RemoteViews(context.packageName, R.layout.goals_widget_item)
-        }
-
-        val habit = habits[position]
-        
-        return RemoteViews(context.packageName, R.layout.goals_widget_item).apply {
-            setTextViewText(R.id.habit_title, habit.title)
-            setTextViewText(R.id.habit_time, habit.time)
-            
-            // Set completion status indicator
-            when (habit.status) {
-                0 -> setImageViewResource(R.id.habit_status, android.R.drawable.presence_invisible)
-                1 -> setImageViewResource(R.id.habit_status, android.R.drawable.presence_online)
-                2 -> setImageViewResource(R.id.habit_status, android.R.drawable.presence_busy)
-                else -> setImageViewResource(R.id.habit_status, android.R.drawable.presence_invisible)
-            }
-            
-            // Fill in the click intent template
-            val fillInIntent = Intent().apply {
-                putExtras(Bundle().apply {
-                    putString("habit_title", habit.title)
-                })
-            }
-            setOnClickFillInIntent(R.id.widget_item_container, fillInIntent)
-        }
-    }
-
+    override fun onCreate() {}
+    override fun onDestroy() {}
     override fun getLoadingView(): RemoteViews? = null
-
     override fun getViewTypeCount(): Int = 1
-
+    override fun hasStableIds(): Boolean = true
+    override fun getCount(): Int = 1 // Only one root view
     override fun getItemId(position: Int): Long = position.toLong()
 
-    override fun hasStableIds(): Boolean = true
-
     override fun onDataSetChanged() {
-        // This is triggered when you call notifyAppWidgetViewDataChanged
-        // on the AppWidgetManager
         habits.clear()
         loadHabitsFromSharedPreferences()
     }
-    
+
+    override fun getViewAt(position: Int): RemoteViews {
+        val root = RemoteViews(context.packageName, R.layout.goals_widget)
+        val containerId = R.id.habits_container
+
+        if (habits.isEmpty()) {
+            root.setViewVisibility(R.id.empty_view, android.view.View.VISIBLE)
+            root.removeAllViews(containerId)
+            return root
+        } else {
+            root.setViewVisibility(R.id.empty_view, android.view.View.GONE)
+            root.removeAllViews(containerId)
+        }
+
+        for (habit in habits) {
+            val card = RemoteViews(context.packageName, R.layout.widget_habit_row)
+            card.setTextViewText(R.id.habit_title, habit.title)
+            card.setTextViewText(R.id.habit_time, habit.time)
+            card.setTextViewText(R.id.habit_progress, habit.progress)
+            card.setTextColor(R.id.habit_title, Color.parseColor("#F0F0F0"))
+
+            // Populate week grid
+            val calendar = Calendar.getInstance()
+            val today = calendar.get(Calendar.DAY_OF_YEAR)
+            calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek)
+            val dayCellIds = intArrayOf(
+                R.id.day_cell_1, R.id.day_cell_2, R.id.day_cell_3, R.id.day_cell_4,
+                R.id.day_cell_5, R.id.day_cell_6, R.id.day_cell_7
+            )
+            for (i in 0..6) {
+                val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+                val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH).toString()
+                val status = habit.completionStatus[dateStr] ?: 0
+                val cellId = dayCellIds[i]
+                card.setTextViewText(cellId, dayOfMonth)
+                if (calendar.get(Calendar.DAY_OF_YEAR) == today) {
+                    card.setInt(cellId, "setBackgroundResource", R.drawable.widget_day_highlight)
+                } else {
+                    card.setInt(cellId, "setBackgroundColor", Color.TRANSPARENT)
+                }
+                calendar.add(Calendar.DATE, 1)
+            }
+            root.addView(containerId, card)
+        }
+        return root
+    }
+
     private fun loadHabitsFromSharedPreferences() {
-        val sharedPreferences = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-        val habitsJson = sharedPreferences.getString("flutter.habits", null) ?: return
-        
+        val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val habitsJson = prefs.getString("flutter.habits", null) ?: return
         try {
             val jsonArray = JSONArray(habitsJson)
-            
-            val today = Calendar.getInstance()
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val todayStr = dateFormat.format(today.time)
-            
             for (i in 0 until jsonArray.length()) {
                 val habitJson = jsonArray.getJSONObject(i)
                 val title = habitJson.getString("title")
                 val timeHour = habitJson.getInt("timeHour")
                 val timeMinute = habitJson.getInt("timeMinute")
-                
-                // Format time
+                val color = habitJson.getInt("colorValue")
+                val targetCount = habitJson.getInt("targetCount")
                 val timeStr = String.format(Locale.getDefault(), "%02d:%02d", timeHour, timeMinute)
-                
-                // Get completion status for today
-                var status = 0 // Default: none
-                if (habitJson.has("completionDates")) {
-                    val completionDates = habitJson.getJSONObject("completionDates")
-                    val keys = completionDates.keys()
-                    
-                    while (keys.hasNext()) {
-                        val dateKey = keys.next()
-                        if (dateKey.startsWith(todayStr)) {
-                            status = completionDates.getInt(dateKey)
-                            break
-                        }
-                    }
+                val completionDates = habitJson.optJSONObject("completionDates") ?: JSONObject()
+                val statusMap = mutableMapOf<String, Int>()
+                var completedCount = 0
+                completionDates.keys().forEach { dateKey ->
+                    val status = completionDates.getInt(dateKey)
+                    statusMap[dateKey.substring(0, 10)] = status
+                    if(status == 1) completedCount++ // 1 is completed
                 }
-                
-                habits.add(HabitItem(title, timeStr, status))
+                habits.add(HabitData(title, timeStr, "$completedCount/$targetCount", color, statusMap))
             }
         } catch (e: JSONException) {
             e.printStackTrace()
@@ -128,8 +111,10 @@ class GoalsRemoteViewsFactory(
     }
 }
 
-data class HabitItem(
+data class HabitData(
     val title: String,
     val time: String,
-    val status: Int // 0: none, 1: completed, 2: skipped
+    val progress: String,
+    val color: Int,
+    val completionStatus: Map<String, Int>
 ) 
