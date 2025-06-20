@@ -30,20 +30,20 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-
+            
         <!-- WidgetHabit App Widget Declaration -->
         <receiver android:name=".GoalsWidgetProvider" android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.widget_habit_app.ACTION_REFRESH" />
             </intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/app_widget_info" />
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/goals_widget_info" />
         </receiver>
 
         <!-- WidgetHabit App Widget Service Declaration -->
         <service android:name=".GoalsWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="true" />
-
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

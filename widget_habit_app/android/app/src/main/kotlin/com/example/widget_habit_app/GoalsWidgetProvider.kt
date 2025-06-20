@@ -1,104 +1,89 @@
 package com.example.widget_habit_app
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.RemoteViews
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import android.app.PendingIntent
+import android.os.Build
+import android.widget.Toast
 
 /**
  * Implementation of App Widget functionality.
  */
 class GoalsWidgetProvider : AppWidgetProvider() {
 
-    override fun onUpdate(
-        context: Context,
-        appWidgetManager: AppWidgetManager,
-        appWidgetIds: IntArray
-    ) {
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         // There may be multiple widgets active, so update all of them
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
     }
 
-    override fun onReceive(context: Context?, intent: Intent?) {
+    override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        if (context == null || intent == null) return
-
-        if (intent.action == ACTION_TICK_OFF_HABIT) {
-            val habitTitle = intent.getStringExtra("habitTitle")
-            // In a real app, you would update your data source here (e.g., database, shared preferences)
-            println("Habit ticked off from widget: $habitTitle")
-
-            // Notify the AppWidgetManager that the data has changed, so the list view can be updated
-            val appWidgetManager = AppWidgetManager.getInstance(context)
-            val appWidgetIds = appWidgetManager.getAppWidgetIds(intent.component)
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.habit_list)
+        
+        if (intent.action == "com.example.widget_habit_app.ACTION_REFRESH") {
+            val appWidgetId = intent.getIntExtra(
+                AppWidgetManager.EXTRA_APPWIDGET_ID,
+                AppWidgetManager.INVALID_APPWIDGET_ID
+            )
+            
+            if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                updateAppWidget(context, appWidgetManager, appWidgetId)
+                Toast.makeText(context, "Widget refreshed", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
-    override fun onEnabled(context: Context) {
-        // Enter relevant functionality for when the first widget is created
-    }
-
-    override fun onDisabled(context: Context) {
-        // Enter relevant functionality for when the last widget is disabled
-    }
-
     companion object {
-        const val ACTION_TICK_OFF_HABIT = "com.example.widget_habit_app.ACTION_TICK_OFF_HABIT"
+        fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
+            // Set up the intent that starts the GoalsWidgetService, which will
+            // provide the views for this collection.
+            val intent = Intent(context, GoalsWidgetService::class.java).apply {
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+                // When intents are compared, the extras are ignored, so we need to embed the extras
+                // into the data so that the extras will not be ignored.
+                data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
+            }
+            
+            // Create refresh intent
+            val refreshIntent = Intent(context, GoalsWidgetProvider::class.java).apply {
+                action = "com.example.widget_habit_app.ACTION_REFRESH"
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
+            }
+            
+            val refreshPendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.getBroadcast(context, appWidgetId, refreshIntent, 
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+            } else {
+                PendingIntent.getBroadcast(context, appWidgetId, refreshIntent, 
+                    PendingIntent.FLAG_UPDATE_CURRENT)
+            }
+            
+            // Launch app intent
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val launchPendingIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.getActivity(context, 0, launchIntent, 
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE)
+            } else {
+                PendingIntent.getActivity(context, 0, launchIntent, 
+                    PendingIntent.FLAG_UPDATE_CURRENT)
+            }
+            
+            // Get the layout for the widget
+            val views = RemoteViews(context.packageName, R.layout.goals_widget).apply {
+                setRemoteAdapter(R.id.widget_list, intent)
+                setEmptyView(R.id.widget_list, R.id.empty_view)
+                setOnClickPendingIntent(R.id.widget_title, launchPendingIntent)
+            }
+            
+            // Tell the AppWidgetManager to perform an update on the current app widget
+            appWidgetManager.updateAppWidget(appWidgetId, views)
+            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list)
+        }
     }
-}
-
-internal fun updateAppWidget(
-    context: Context,
-    appWidgetManager: AppWidgetManager,
-    appWidgetId: Int
-) {
-    val views = RemoteViews(context.packageName, R.layout.app_widget_layout)
-
-    // Set current date dynamically
-    val calendar = Calendar.getInstance()
-    val dayOfWeekFormat = SimpleDateFormat("EEE", Locale.getDefault())
-    val dateFormat = SimpleDateFormat("dd MMM", Locale.getDefault())
-
-    views.setTextViewText(R.id.current_date_thu, dayOfWeekFormat.format(calendar.time).uppercase(Locale.getDefault()))
-    views.setTextViewText(R.id.current_date_jun, dateFormat.format(calendar.time))
-
-    // Set up click listener for the header to open the app
-    val appIntent = Intent(context, MainActivity::class.java)
-    val pendingAppIntent: PendingIntent = PendingIntent.getActivity(
-        context,
-        0,
-        appIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-    views.setOnClickPendingIntent(R.id.goals_title, pendingAppIntent) // Make the title clickable
-    views.setOnClickPendingIntent(R.id.calendar_icon, pendingAppIntent) // Make the calendar icon clickable
-
-    // Set up the RemoteViewsService to populate the list view
-    val serviceIntent = Intent(context, GoalsWidgetService::class.java).apply {
-        putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
-        data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
-    }
-    views.setRemoteAdapter(R.id.habit_list, serviceIntent)
-
-    // Set up a pending intent template for the list items
-    val clickIntent = Intent(context, MainActivity::class.java)
-    val clickPendingIntent = PendingIntent.getActivity(
-        context,
-        0,
-        clickIntent,
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
-    views.setPendingIntentTemplate(R.id.habit_list, clickPendingIntent)
-
-    // Instruct the widget manager to update the widget
-    appWidgetManager.updateAppWidget(appWidgetId, views)
 } 
