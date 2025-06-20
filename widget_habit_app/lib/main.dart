@@ -38,12 +38,9 @@ class GoalsScreen extends StatefulWidget {
 }
 
 class _GoalsScreenState extends State<GoalsScreen> with WidgetsBindingObserver {
-  final HabitService _habitService = HabitService();
   List<Habit> _habits = [];
   DateTime _currentWeekStart = DateTime.now();
   bool _isLoading = false;
-  DateTime _selectedDate = DateTime.now();
-  int _currentWeekOffset = 0;
 
   @override
   void initState() {
@@ -122,15 +119,18 @@ class _GoalsScreenState extends State<GoalsScreen> with WidgetsBindingObserver {
   Future<void> _loadHabits() async {
     final prefs = await SharedPreferences.getInstance();
     final String? habitsJson = prefs.getString('habits');
+    List<Habit> loadedHabits = [];
     if (habitsJson != null) {
       final List<dynamic> habitList = json.decode(habitsJson);
-      if (mounted) {
-        setState(() {
-          _habits = habitList.map((json) => Habit.fromJson(json)).toList();
-        });
-      }
+      loadedHabits = habitList.map((json) => Habit.fromJson(json)).toList();
     }
-    // No need to update widget on load, it happens on resume or changes
+    if (mounted) {
+      setState(() {
+        _habits = loadedHabits;
+      });
+      // Update widget when app is loaded/resumed
+      await WidgetService.updateWidgetData(loadedHabits);
+    }
   }
 
   Future<void> _saveHabits() async {
@@ -157,7 +157,7 @@ class _GoalsScreenState extends State<GoalsScreen> with WidgetsBindingObserver {
       _habits.add(newHabit);
     });
     await _saveHabits();
-    await WidgetService.updateWidget();
+    await WidgetService.updateWidgetData(_habits);
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -171,7 +171,7 @@ class _GoalsScreenState extends State<GoalsScreen> with WidgetsBindingObserver {
       habit.setCompletionStatus(date, nextStatus);
     });
     await _saveHabits();
-    await WidgetService.updateWidget();
+    await WidgetService.updateWidgetData(_habits);
   }
 
   void _onHabitFavorited(Habit habit) async {
@@ -179,7 +179,7 @@ class _GoalsScreenState extends State<GoalsScreen> with WidgetsBindingObserver {
       habit.isFavorite = !habit.isFavorite;
     });
     await _saveHabits();
-    await WidgetService.updateWidget();
+    await WidgetService.updateWidgetData(_habits);
   }
 
   void _deleteHabit(Habit habit) async {
@@ -187,7 +187,7 @@ class _GoalsScreenState extends State<GoalsScreen> with WidgetsBindingObserver {
       _habits.remove(habit);
     });
     await _saveHabits();
-    await WidgetService.updateWidget();
+    await WidgetService.updateWidgetData(_habits);
   }
 
   void _showAddHabitSheet() {
@@ -357,13 +357,13 @@ class _GoalsScreenState extends State<GoalsScreen> with WidgetsBindingObserver {
 class AddHabitSheet extends StatefulWidget {
   final Function(String, TimeOfDay, Color, bool) onAdd;
 
-  const AddHabitSheet({Key? key, required this.onAdd}) : super(key: key);
+  const AddHabitSheet({super.key, required this.onAdd});
 
   @override
-  _AddHabitSheetState createState() => _AddHabitSheetState();
+  AddHabitSheetState createState() => AddHabitSheetState();
 }
 
-class _AddHabitSheetState extends State<AddHabitSheet> {
+class AddHabitSheetState extends State<AddHabitSheet> {
   final _formKey = GlobalKey<FormState>();
   String _title = '';
   TimeOfDay _selectedTime = TimeOfDay.now();
@@ -413,14 +413,6 @@ class _AddHabitSheetState extends State<AddHabitSheet> {
 
       try {
         _formKey.currentState!.save();
-        final newHabit = Habit(
-          title: _title,
-          time: _selectedTime,
-          color: _selectedColor,
-          targetCount: _targetCount,
-          isFavorite: _isFavorite,
-        );
-
         if (mounted) {
           widget.onAdd(_title, _selectedTime, _selectedColor, _isFavorite);
         }

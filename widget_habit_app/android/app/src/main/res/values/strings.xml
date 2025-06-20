@@ -10,4 +10,8 @@
     <string name="widget_today">Today</string>
     <string name="widget_yesterday">Yesterday</string>
     <string name="widget_this_week">This week</string>
+    <string name="widget_progress_initial_zero">0/0</string>
+    <string name="widget_progress_error_fallback">?/?</string>
+    <string name="widget_error_state">Widget Error</string>
+    <string name="widget_error_state_long">Failed to load widget data. Please open the app.</string>
 </resources> 

@@ -8,6 +8,7 @@
 
     <!-- Header -->
     <LinearLayout
+        android:id="@+id/widget_header_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
@@ -25,7 +26,6 @@
                 android:id="@+id/widget_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Goals"
                 android:textColor="@color/widget_primary_text"
                 android:textSize="@dimen/widget_text_header"
                 android:textStyle="bold" />
@@ -49,7 +49,7 @@
             android:textColor="@color/widget_accent_blue"
             android:textSize="@dimen/widget_text_title"
             android:textStyle="bold"
-            android:background="@drawable/widget_completion_dot_incomplete"
+            android:background="@color/widget_card_background"
             android:padding="@dimen/widget_space_s"
             android:minWidth="32dp"
             android:gravity="center" />
@@ -57,255 +57,28 @@
     </LinearLayout>
 
     <!-- Week Days Header -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:paddingBottom="@dimen/widget_space_xs">
-
-        <!-- Empty space for habit info -->
-        <View
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
-        <!-- Week day labels -->
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:text="M"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="@dimen/widget_text_small"
-            android:gravity="center"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:text="T"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="@dimen/widget_text_small"
-            android:gravity="center"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:text="W"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="@dimen/widget_text_small"
-            android:gravity="center"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:text="T"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="@dimen/widget_text_small"
-            android:gravity="center"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:text="F"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="@dimen/widget_text_small"
-            android:gravity="center"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:text="S"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="@dimen/widget_text_small"
-            android:gravity="center"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.5"
-            android:text="S"
-            android:textColor="@color/widget_tertiary_text"
-            android:textSize="@dimen/widget_text_small"
-            android:gravity="center"
-            android:textStyle="bold" />
-
-    </LinearLayout>
 
     <!-- Habits Container -->
-    <ScrollView
+    <LinearLayout
+        android:id="@+id/widget_habits_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:scrollbars="none">
+        android:orientation="vertical">
 
-        <LinearLayout
-            android:id="@+id/widget_habits_container"
+        <!-- Habit rows will be dynamically added here -->
+
+        <TextView
+            android:id="@+id/no_habits_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:layout_marginTop="@dimen/widget_space_m"
+            android:text="@string/widget_no_habits"
+            android:textColor="@color/widget_secondary_text"
+            android:textSize="@dimen/widget_text_medium"
+            android:gravity="center"
+            android:visibility="gone" />
 
-            <!-- Habit rows will be dynamically added here -->
-            <!-- Template for habit row -->
-            <LinearLayout
-                android:id="@+id/habit_row_template"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingVertical="@dimen/widget_space_xs"
-                android:visibility="gone">
-
-                <!-- Habit Info -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <!-- Color indicator -->
-                    <View
-                        android:id="@+id/habit_color_indicator"
-                        android:layout_width="@dimen/widget_habit_color_bar_width"
-                        android:layout_height="@dimen/widget_habit_color_bar_height"
-                        android:background="@color/widget_accent_blue"
-                        android:layout_marginEnd="@dimen/widget_space_s" />
-
-                    <!-- Title and time -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <TextView
-                                android:id="@+id/habit_title"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Morning Workout"
-                                android:textColor="@color/widget_primary_text"
-                                android:textSize="@dimen/widget_text_title"
-                                android:textStyle="bold"
-                                android:maxLines="1"
-                                android:ellipsize="end" />
-
-                            <!-- Favorite star -->
-                            <ImageView
-                                android:id="@+id/habit_favorite_star"
-                                android:layout_width="@dimen/widget_icon_small"
-                                android:layout_height="@dimen/widget_icon_small"
-                                android:src="@android:drawable/btn_star"
-                                android:tint="@color/widget_favorite_amber"
-                                android:layout_marginStart="@dimen/widget_space_xs"
-                                android:visibility="gone" />
-
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/habit_time"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="7:00 AM"
-                            android:textColor="@color/widget_secondary_text"
-                            android:textSize="@dimen/widget_text_small" />
-
-                    </LinearLayout>
-
-                </LinearLayout>
-
-                <!-- Weekly completion dots -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
-
-                    <ImageView
-                        android:id="@+id/completion_day_0"
-                        android:layout_width="@dimen/widget_completion_dot_small"
-                        android:layout_height="@dimen/widget_completion_dot_small"
-                        android:layout_margin="1dp"
-                        android:background="@drawable/widget_completion_dot_incomplete"
-                        android:clickable="true"
-                        android:focusable="true" />
-
-                    <ImageView
-                        android:id="@+id/completion_day_1"
-                        android:layout_width="@dimen/widget_completion_dot_small"
-                        android:layout_height="@dimen/widget_completion_dot_small"
-                        android:layout_margin="1dp"
-                        android:background="@drawable/widget_completion_dot_incomplete"
-                        android:clickable="true"
-                        android:focusable="true" />
-
-                    <ImageView
-                        android:id="@+id/completion_day_2"
-                        android:layout_width="@dimen/widget_completion_dot_small"
-                        android:layout_height="@dimen/widget_completion_dot_small"
-                        android:layout_margin="1dp"
-                        android:background="@drawable/widget_completion_dot_incomplete"
-                        android:clickable="true"
-                        android:focusable="true" />
-
-                    <ImageView
-                        android:id="@+id/completion_day_3"
-                        android:layout_width="@dimen/widget_completion_dot_small"
-                        android:layout_height="@dimen/widget_completion_dot_small"
-                        android:layout_margin="1dp"
-                        android:background="@drawable/widget_completion_dot_incomplete"
-                        android:clickable="true"
-                        android:focusable="true" />
-
-                    <ImageView
-                        android:id="@+id/completion_day_4"
-                        android:layout_width="@dimen/widget_completion_dot_small"
-                        android:layout_height="@dimen/widget_completion_dot_small"
-                        android:layout_margin="1dp"
-                        android:background="@drawable/widget_completion_dot_incomplete"
-                        android:clickable="true"
-                        android:focusable="true" />
-
-                    <ImageView
-                        android:id="@+id/completion_day_5"
-                        android:layout_width="@dimen/widget_completion_dot_small"
-                        android:layout_height="@dimen/widget_completion_dot_small"
-                        android:layout_margin="1dp"
-                        android:background="@drawable/widget_completion_dot_incomplete"
-                        android:clickable="true"
-                        android:focusable="true" />
-
-                    <ImageView
-                        android:id="@+id/completion_day_6"
-                        android:layout_width="@dimen/widget_completion_dot_small"
-                        android:layout_height="@dimen/widget_completion_dot_small"
-                        android:layout_margin="1dp"
-                        android:background="@drawable/widget_completion_dot_incomplete"
-                        android:clickable="true"
-                        android:focusable="true" />
-
-                </LinearLayout>
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </ScrollView>
+    </LinearLayout>
 
 </LinearLayout> 

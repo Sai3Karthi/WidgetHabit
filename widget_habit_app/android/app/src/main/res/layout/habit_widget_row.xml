@@ -16,11 +16,12 @@
         android:gravity="center_vertical">
 
         <!-- Color indicator -->
-        <View
+        <ImageView
             android:id="@+id/habit_color_indicator"
             android:layout_width="@dimen/widget_habit_color_bar_width"
             android:layout_height="@dimen/widget_habit_color_bar_height"
-            android:background="@color/widget_accent_blue"
+            android:src="@drawable/widget_color_background"
+            android:tint="@color/widget_accent_blue"
             android:layout_marginEnd="@dimen/widget_space_s" />
 
         <!-- Title and time -->
@@ -52,7 +53,7 @@
                     android:id="@+id/habit_favorite_star"
                     android:layout_width="@dimen/widget_icon_small"
                     android:layout_height="@dimen/widget_icon_small"
-                    android:src="@android:drawable/btn_star"
+                    android:src="@drawable/ic_star_filled"
                     android:tint="@color/widget_favorite_amber"
                     android:layout_marginStart="@dimen/widget_space_xs"
                     android:visibility="gone" />
@@ -83,50 +84,43 @@
             android:id="@+id/completion_day_0"
             android:layout_width="@dimen/widget_completion_dot_small"
             android:layout_height="@dimen/widget_completion_dot_small"
-            android:layout_marginHorizontal="2dp"
-            android:background="@drawable/widget_completion_dot_incomplete" />
+            android:layout_marginHorizontal="2dp" />
 
         <ImageView
             android:id="@+id/completion_day_1"
             android:layout_width="@dimen/widget_completion_dot_small"
             android:layout_height="@dimen/widget_completion_dot_small"
-            android:layout_marginHorizontal="2dp"
-            android:background="@drawable/widget_completion_dot_incomplete" />
+            android:layout_marginHorizontal="2dp" />
 
         <ImageView
             android:id="@+id/completion_day_2"
             android:layout_width="@dimen/widget_completion_dot_small"
             android:layout_height="@dimen/widget_completion_dot_small"
-            android:layout_marginHorizontal="2dp"
-            android:background="@drawable/widget_completion_dot_incomplete" />
+            android:layout_marginHorizontal="2dp" />
 
         <ImageView
             android:id="@+id/completion_day_3"
             android:layout_width="@dimen/widget_completion_dot_small"
             android:layout_height="@dimen/widget_completion_dot_small"
-            android:layout_marginHorizontal="2dp"
-            android:background="@drawable/widget_completion_dot_incomplete" />
+            android:layout_marginHorizontal="2dp" />
 
         <ImageView
             android:id="@+id/completion_day_4"
             android:layout_width="@dimen/widget_completion_dot_small"
             android:layout_height="@dimen/widget_completion_dot_small"
-            android:layout_marginHorizontal="2dp"
-            android:background="@drawable/widget_completion_dot_incomplete" />
+            android:layout_marginHorizontal="2dp" />
 
         <ImageView
             android:id="@+id/completion_day_5"
             android:layout_width="@dimen/widget_completion_dot_small"
             android:layout_height="@dimen/widget_completion_dot_small"
-            android:layout_marginHorizontal="2dp"
-            android:background="@drawable/widget_completion_dot_incomplete" />
+            android:layout_marginHorizontal="2dp" />
 
         <ImageView
             android:id="@+id/completion_day_6"
             android:layout_width="@dimen/widget_completion_dot_small"
             android:layout_height="@dimen/widget_completion_dot_small"
-            android:layout_marginHorizontal="2dp"
-            android:background="@drawable/widget_completion_dot_incomplete" />
+            android:layout_marginHorizontal="2dp" />
 
     </LinearLayout>
 

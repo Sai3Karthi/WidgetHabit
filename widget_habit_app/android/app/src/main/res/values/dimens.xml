@@ -29,6 +29,7 @@
     <!-- Text Sizes -->
     <dimen name="widget_text_header">16sp</dimen>
     <dimen name="widget_text_title">14sp</dimen>
+    <dimen name="widget_text_medium">12sp</dimen>
     <dimen name="widget_text_body">12sp</dimen>
     <dimen name="widget_text_small">10sp</dimen>
 
